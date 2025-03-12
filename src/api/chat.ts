@@ -1,13 +1,8 @@
-import OpenAI from 'openai';
-import { OpenAIStream, StreamingTextResponse } from 'ai';
+// Simulated chat API without OpenAI dependency
+// In a real application, you would use the OpenAI SDK
 
 // This would normally be in an environment variable
 const apiKey = 'dummy-key'; // Replace with actual key in production
-
-// Create an OpenAI API client (this is a simulation for our frontend-only app)
-export const openai = new OpenAI({
-  apiKey: apiKey,
-});
 
 // This function would normally be in an API route
 export async function chat(messages: any[]) {
