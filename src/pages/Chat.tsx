@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { mockChatCompletion } from '../lib/mockApi';
 
 type Message = {
   id: string;
   content: string;
-  isUser: boolean;
+  role: 'user' | 'assistant';
   timestamp: Date;
 };
 
@@ -14,11 +16,11 @@ export default function Chat() {
     {
       id: '1',
       content: 'Hello! How can I assist you today?',
-      isUser: false,
+      role: 'assistant',
       timestamp: new Date(),
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -31,49 +33,53 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!input.trim() || isLoading) return;
+    
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputValue,
-      isUser: true,
+      content: input,
+      role: 'user',
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
     setIsLoading(true);
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      const aiResponses = [
-        "I'm here to help! What would you like to know?",
-        "That's an interesting question. Let me think about that...",
-        "I can definitely help you with that!",
-        "Here's what I found on that topic...",
-        "Could you provide more details so I can better assist you?",
-      ];
+    try {
+      // Convert our messages to the format expected by the API
+      const apiMessages = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
       
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+      // Add the new user message
+      apiMessages.push({
+        role: 'user',
+        content: userMessage.content,
+      });
       
+      // Call our mock API
+      const response = await mockChatCompletion(apiMessages);
+      
+      // Add AI response
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: randomResponse,
-        isUser: false,
+        id: response.id,
+        content: response.content,
+        role: 'assistant',
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to get a response. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
     }
   };
 
@@ -99,11 +105,11 @@ export default function Chat() {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
               className={`max-w-[80%] p-3 rounded-lg ${
-                message.isUser
+                message.role === 'user'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white border border-gray-200 text-gray-800'
               }`}
@@ -111,7 +117,7 @@ export default function Chat() {
               <p>{message.content}</p>
               <div
                 className={`text-xs mt-1 ${
-                  message.isUser ? 'text-indigo-200' : 'text-gray-500'
+                  message.role === 'user' ? 'text-indigo-200' : 'text-gray-500'
                 }`}
               >
                 {formatTime(message.timestamp)}
@@ -135,27 +141,35 @@ export default function Chat() {
 
       {/* Input Area */}
       <div className="bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2">
+        <form onSubmit={handleSendMessage} className="flex items-center bg-gray-100 rounded-lg px-3 py-2">
           <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (input.trim() && !isLoading) {
+                  handleSendMessage(e as any);
+                }
+              }
+            }}
             placeholder="Type your message..."
             className="flex-1 bg-transparent outline-none resize-none max-h-32"
             rows={1}
+            disabled={isLoading}
           />
           <button
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
+            type="submit"
+            disabled={!input.trim() || isLoading}
             className={`ml-2 p-2 rounded-full ${
-              !inputValue.trim() || isLoading
+              !input.trim() || isLoading
                 ? 'text-gray-400 bg-gray-200'
                 : 'text-white bg-indigo-600 hover:bg-indigo-700'
             } transition-colors`}
           >
             <Send size={18} />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
