@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { X, Settings, Database, BarChart3, MessageSquare, Moon, Sun } from 'lucide-react'
+import { X, Settings, Database, BarChart3, MessageSquare, Moon, Sun, Plus } from 'lucide-react'
+import { useApp } from '../context/AppContext'
+import { formatDistanceToNow } from '../lib/utils'
 
 interface SidebarProps {
   isOpen: boolean
@@ -7,12 +9,19 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const [activeTab, setActiveTab] = useState('conversations')
-  const [darkMode, setDarkMode] = useState(false)
+  const { 
+    activeTab, 
+    setActiveTab, 
+    conversations, 
+    currentConversationId, 
+    setCurrentConversationId,
+    startNewConversation,
+    settings,
+    updateSettings
+  } = useApp()
   
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark')
+    updateSettings({ darkMode: !settings.darkMode })
   }
 
   return (
@@ -23,7 +32,9 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         flex flex-col`}
     >
       <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-        <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">AI Assistant</h1>
+        <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
+          {settings.assistantName}
+        </h1>
         <button 
           onClick={() => setIsOpen(false)}
           className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
@@ -45,6 +56,36 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
               <MessageSquare size={18} className="mr-2" />
               <span>Conversations</span>
             </button>
+            
+            {activeTab === 'conversations' && (
+              <div className="mt-2 ml-2 space-y-1">
+                <button
+                  onClick={startNewConversation}
+                  className="w-full flex items-center p-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-400"
+                >
+                  <Plus size={16} className="mr-2" />
+                  <span>New Chat</span>
+                </button>
+                
+                {conversations.map(conversation => (
+                  <button
+                    key={conversation.id}
+                    onClick={() => setCurrentConversationId(conversation.id)}
+                    className={`w-full flex items-center justify-between p-2 text-sm rounded-md 
+                      ${currentConversationId === conversation.id 
+                        ? 'bg-gray-100 dark:bg-gray-700' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                  >
+                    <span className="truncate flex-1 text-left">
+                      {conversation.title}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatDistanceToNow(new Date(conversation.lastUpdated))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </li>
           <li>
             <button
@@ -91,7 +132,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           className="w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <span>Dark Mode</span>
-          {darkMode ? <Moon size={18} /> : <Sun size={18} />}
+          {settings.darkMode ? <Moon size={18} /> : <Sun size={18} />}
         </button>
       </div>
     </aside>

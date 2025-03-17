@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from '../lib/utils'
+import { useApp } from '../context/AppContext'
 
 interface Message {
   id: string
@@ -12,6 +13,7 @@ interface ChatMessageProps {
 }
 
 const ChatMessage = ({ message }: ChatMessageProps) => {
+  const { settings } = useApp()
   const isUser = message.sender === 'user'
   
   return (
@@ -33,7 +35,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
             </div>
           )}
           <span className={`text-xs ${isUser ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'}`}>
-            {isUser ? 'You' : 'Assistant'} • {formatDistanceToNow(message.timestamp)}
+            {isUser ? 'You' : settings.assistantName} • {formatDistanceToNow(new Date(message.timestamp))}
           </span>
         </div>
         <p className={`text-sm whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
