@@ -1,16 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Chat from './pages/Chat';
+import { useState } from 'react'
+import ChatInterface from './components/ChatInterface'
+import Sidebar from './components/Sidebar'
+import './App.css'
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/chat" element={<Chat />} />
-      </Routes>
-    </Router>
-  );
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <ChatInterface toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      </main>
+    </div>
+  )
 }
 
-export default App;
+export default App
